@@ -35,10 +35,10 @@ uint8_t minADC[MAX_SENSOR];
 int8_t selCP = 0;
 uint8_t CP[MAX_CP + 1] = {0,0,0,0,0,0,0,0,0,0}; 
 
-float Kp[MAX_PID] = {5, 10, 12, 14, 16};
-float Ki[MAX_PID] = {20, 30, 40, 50, 60};
-float Kd[MAX_PID] = {30, 40, 50, 60, 70};
-float TS[MAX_PID] = {2, 2, 2, 2, 2};
+float Kp[MAX_PID] = {4, 6, 8, 10, 12};
+float Ki[MAX_PID] = {0.5, 0.75, 1, 1.25, 1.5};
+float Kd[MAX_PID] = {8, 9, 10, 11, 12};
+float TS[MAX_PID] = {1, 1, 1, 1, 1};
 float MIN_SPEED[MAX_PID] = {-255, -255, -255, -255, -255};
 float MAX_SPEED[MAX_PID] = {255, 255, 255, 255, 255};  
 
@@ -168,8 +168,7 @@ void IoTA_Basic::setCP(uint8_t cp, uint8_t planCP){
 void IoTA_Basic::setSpeed(uint8_t spd){
   SPEED_RUN = spd;
 }
-
-
+ 
 void IoTA_Basic::begin(){ 
   
   Serial.begin(115200); 
@@ -529,28 +528,191 @@ void IoTA_Basic::calibrateSensor(){
 
     EEPROM.commit();
   }  
-}
+} 
  
+// void IoTA_Basic::homeScreen(){
+//   delay(200);
+//   bool enableSel = 0; 
+
+//   int8_t maxParamScan = 2;
+//   int8_t paramScanValue = 0;
+//   String paramScan[maxParamScan + 1] = {
+//     "LEFT",
+//     "RIGHT",
+//   };
+
+//   int8_t maxParamMotor = 4;
+//   int8_t paramMotorValue = 0;
+//   String paramMotor[maxParamMotor + 1] = {
+//     "FRWD-BCWR", 
+//     "FRWARD 1s",
+//     "FRWARD 2s",
+//     "BCKWRD 1s",
+//     "BCKWRD 2s",
+//   };
+
+//   oled.clearDisplay();
+//   while (1) { 
+//     stop();
+//     oled.setTextColor(WHITE);
+//     oled.clearDisplay();
+
+//     tampilBarSensor(0); 
+  
+//     drawCursor(m1);
+
+//     for (int x = 0; x < MAX_MENU; x++) {
+//       if (x == m) {
+//         oled.setCursor(6, 15 + 2 + (x - (m - m1)) * 12.5);
+//       } else {
+//         oled.setCursor(0, 15 + 2 + (x - (m - m1)) * 12.5);
+//       }
+//       oled.print(menuSet[x]);
+
+//       if (x == 1) {
+//         oled.print(selCP);
+//         oled.print(" (P");
+//         oled.print(CP[selCP]);
+//         oled.print(")");
+//       }
+//       if (x == 3) {
+//         oled.print(paramMotor[paramMotorValue]);
+//       }
+//     }
+ 
+//     oled.display();
+//     if(B){
+//       enableSel = 1;
+//     } else{
+//       enableSel = 0;
+//     }
+
+//     if (E && m == 0) {
+//       // printAlert("Running PID");
+//       // runPID();
+//       // showMaze();
+//       // mazeSolving();
+//       printAlert("Robot Running..");
+//       while(!B){
+//         runPlan();
+//         // Err = getError(); 
+//         // PIDLine(spd, kp, ki, kd, ts, minSpd, maxSpd); 
+//       }
+//     }
+
+//     if (E && m == 1){
+//       if(paramScanValue==0){
+//         // scanMazeLeft();
+//       } 
+//       else{
+//         // scanMazeRight();
+//       }
+//     } 
+//     if (E && m == 2) { 
+//       diplaySensors(); 
+//     }
+//     if (E && m == 3) {
+//       if (paramMotorValue == 0) {
+//         printAlert("Test Motor!");
+//         motor(100, 100);
+//         delay(1000);
+//         stop();
+//         delay(300);
+//         motor(-100, -100);
+//         delay(1000);
+//         motor(0, 0);
+//       }
+//       if (paramMotorValue == 1) {
+//         printAlert("Test Motor!");
+//         motor(100, 100);
+//         delay(1000);
+//         motor(0, 0);
+//       }
+//       if (paramMotorValue == 2) {
+//         printAlert("Test Motor!");
+//         motor(100, 100);
+//         delay(2000);
+//         motor(0, 0);
+//       }
+//       if (paramMotorValue == 3) {
+//         printAlert("Test Motor!");
+//         motor(-100, -100);
+//         delay(1000);
+//         motor(0, 0);
+//       }
+//       if (paramMotorValue == 4) {
+//         printAlert("Test Motor!");
+//         motor(-100, -100);
+//         delay(2000);
+//         motor(0, 0);
+//       } 
+//     }  
+
+//     if (enableSel && P && m == 1) {
+//       selCP++;
+//       delay(100);
+//       if (selCP >= MAX_CP) {
+//         selCP = 0;
+//       }
+//       EEPROM.write(addCP, selCP);
+//       EEPROM.commit();
+//     }
+//     if (enableSel && M && m == 1) {
+//       selCP--;
+//       delay(100);
+//       if (selCP < 0) {
+//         selCP = MAX_CP;
+//       }
+//       EEPROM.write(addCP, selCP);
+//       EEPROM.commit();
+//     }
+
+//     if (enableSel && P && m == 3) {
+//       paramMotorValue++;
+//       delay(200);
+//       if (paramMotorValue >= maxParamMotor) {
+//         paramMotorValue = 0;
+//       }
+//     }
+//     if (enableSel && M && m == 3) {
+//       paramMotorValue--;
+//       delay(200);
+//       if (paramMotorValue < 0) {
+//         paramMotorValue = maxParamMotor;
+//       }
+//     }
+
+//     if (!enableSel && P && m > 0) {
+//       m--;
+//       m1--;
+//       if (m1 < minm) {
+//         m1 = minm;
+//       }
+//       delay(100);
+//     }
+//     if (!enableSel && M && m < maxm) {
+//       m++;
+//       m1++;
+//       if (m1 >= maxm1) {
+//         m1 = maxm1;
+//       }
+//       delay(100);
+//     }
+//   }
+// }
+
 void IoTA_Basic::homeScreen(){
   delay(200);
   bool enableSel = 0; 
 
-  int8_t maxParamScan = 2;
-  int8_t paramScanValue = 0;
-  String paramScan[maxParamScan + 1] = {
-    "LEFT",
-    "RIGHT",
+  #define MAX_MENU 4
+  String menuSet[MAX_MENU + 1] = {
+    "KP:",
+    "KI:", 
+    "KD:",
+    "TS:",
   };
-
-  int8_t maxParamMotor = 4;
-  int8_t paramMotorValue = 0;
-  String paramMotor[maxParamMotor + 1] = {
-    "FRWD-BCWR", 
-    "FRWARD 1s",
-    "FRWARD 2s",
-    "BCKWRD 1s",
-    "BCKWRD 2s",
-  };
+ 
 
   oled.clearDisplay();
   while (1) { 
@@ -560,25 +722,20 @@ void IoTA_Basic::homeScreen(){
 
     tampilBarSensor(0); 
   
-    drawCursor(m1);
+    drawCursor(m);
 
     for (int x = 0; x < MAX_MENU; x++) {
       if (x == m) {
-        oled.setCursor(6, 15 + 2 + (x - (m - m1)) * 12.5);
+        oled.setCursor(6, 15 + 2 + (x) * 12.5);
       } else {
-        oled.setCursor(0, 15 + 2 + (x - (m - m1)) * 12.5);
+        oled.setCursor(0, 15 + 2 + (x) * 12.5);
       }
       oled.print(menuSet[x]);
 
-      if (x == 1) {
-        oled.print(selCP);
-        oled.print(" (P");
-        oled.print(CP[selCP]);
-        oled.print(")");
-      }
-      if (x == 3) {
-        oled.print(paramMotor[paramMotorValue]);
-      }
+      if (x == 0) {oled.print(Kp[2]);} 
+      if (x == 1) {oled.print(Ki[2]);} 
+      if (x == 2) {oled.print(Kd[2]);} 
+      if (x == 3) {oled.print(TS[2]); oled.print(" "); oled.print(SPEED_RUN);} 
     }
  
     oled.display();
@@ -588,117 +745,68 @@ void IoTA_Basic::homeScreen(){
       enableSel = 0;
     }
 
-    if (E && m == 0) {
-      // printAlert("Running PID");
-      // runPID();
-      // showMaze();
-      // mazeSolving();
+    if (E && m == 0) { 
       printAlert("Robot Running..");
       while(!B){
-        runPlan();
-        // Err = getError(); 
-        // PIDLine(spd, kp, ki, kd, ts, minSpd, maxSpd); 
+        runPlan(); 
       }
     }
-
-    if (E && m == 1){
-      if(paramScanValue==0){
-        // scanMazeLeft();
-      } 
-      else{
-        // scanMazeRight();
-      }
-    } 
-    if (E && m == 2) { 
+ 
+    if (E && m == 1) { 
       diplaySensors(); 
-    }
-    if (E && m == 3) {
-      if (paramMotorValue == 0) {
-        printAlert("Test Motor!");
-        motor(100, 100);
-        delay(1000);
-        stop();
-        delay(300);
-        motor(-100, -100);
-        delay(1000);
-        motor(0, 0);
-      }
-      if (paramMotorValue == 1) {
-        printAlert("Test Motor!");
-        motor(100, 100);
-        delay(1000);
-        motor(0, 0);
-      }
-      if (paramMotorValue == 2) {
-        printAlert("Test Motor!");
-        motor(100, 100);
-        delay(2000);
-        motor(0, 0);
-      }
-      if (paramMotorValue == 3) {
-        printAlert("Test Motor!");
-        motor(-100, -100);
-        delay(1000);
-        motor(0, 0);
-      }
-      if (paramMotorValue == 4) {
-        printAlert("Test Motor!");
-        motor(-100, -100);
-        delay(2000);
-        motor(0, 0);
-      } 
-    }  
+    } 
 
+    if (enableSel && P && m == 0) {
+      Kp[2]++;
+      delay(50); 
+    }
+    if (enableSel && M && m == 0) {
+      Kp[2]--;
+      delay(50); 
+    }
     if (enableSel && P && m == 1) {
-      selCP++;
-      delay(100);
-      if (selCP >= MAX_CP) {
-        selCP = 0;
-      }
-      EEPROM.write(addCP, selCP);
-      EEPROM.commit();
+      Ki[2]+=0.25;
+      delay(50); 
     }
     if (enableSel && M && m == 1) {
-      selCP--;
-      delay(100);
-      if (selCP < 0) {
-        selCP = MAX_CP;
-      }
-      EEPROM.write(addCP, selCP);
-      EEPROM.commit();
+      Ki[2]-=0.25;
+      delay(50); 
     }
-
+    if (enableSel && P && m == 2) {
+      Kd[2]++;
+      delay(50); 
+    }
+    if (enableSel && M && m == 2) {
+      Kd[2]--;
+      delay(50); 
+    }
     if (enableSel && P && m == 3) {
-      paramMotorValue++;
-      delay(200);
-      if (paramMotorValue >= maxParamMotor) {
-        paramMotorValue = 0;
-      }
+      TS[2]++;
+      delay(50); 
     }
     if (enableSel && M && m == 3) {
-      paramMotorValue--;
-      delay(200);
-      if (paramMotorValue < 0) {
-        paramMotorValue = maxParamMotor;
-      }
+      TS[2]--;
+      delay(50); 
     }
 
-    if (!enableSel && P && m > 0) {
-      m--;
-      m1--;
-      if (m1 < minm) {
-        m1 = minm;
-      }
-      delay(100);
+    if (E && P && m == 3) {
+      SPEED_RUN++;
+      delay(50); 
     }
-    if (!enableSel && M && m < maxm) {
-      m++;
-      m1++;
-      if (m1 >= maxm1) {
-        m1 = maxm1;
-      }
-      delay(100);
+    else if (E && M && m == 3) {
+      SPEED_RUN--;
+      delay(50); 
     }
+
+    else if(!enableSel && M){
+      m++; delay(100);
+      if(m>3){m=0;}
+    }
+    else if(!enableSel && P){
+      m--; delay(100);
+      if(m<0){m=3;}
+    }
+ 
   }
 }
 
@@ -844,21 +952,21 @@ void IoTA_Basic::runPlan(){
   double Err = 0, lastErr = 9;
   
   unsigned long lastMillis = millis();
-
+  
   while(!B){
     unsigned long currentMillis = millis(); 
 
-    if(currentMillis - lastMillis > TS[runPlanNow]){
+    if(currentMillis - lastMillis > TS[setP.selPID[runPlanNow]]){
       double deltaTime = (currentMillis - lastMillis) / 1000.000;
       lastMillis = millis();
 
       readADC();
 
-      uint8_t bitSensor = 0b00000000;
+      uint8_t bitSensor = 0;
 
       for(n = 0; n < MAX_SENSOR; n++){
         if((setP.colorLine[runPlanNow] == BLACK && s[n] > refADC[n]) || setP.colorLine[runPlanNow] == WHITE && s[n] < refADC[n]){
-          bitSensor += 0b10000000 >> n;
+          bitSensor += (1<<MAX_SENSOR-1) >> n;
         }  
       }  
 
@@ -874,20 +982,20 @@ void IoTA_Basic::runPlan(){
         {0b01000010, 0}, 
         {0b11000011, 0}, 
         {0b10000001, 0},  
-        {0b00001100,  4},
-        {0b00110000, -4},
-        {0b00001000,  2},
-        {0b00010000, -2},
-        {0b00000110,  8},
-        {0b01100000, -8},
-        {0b00000100,  6},
-        {0b00100000, -6},
-        {0b00000011,  16},
-        {0b11000000, -16},
-        {0b00000010,  12},
-        {0b01000000, -12},
-        {0b00000001,  20},
-        {0b10000000, -20}
+        {0b00001100,  5},
+        {0b00110000, -5},
+        {0b00001000,  1},
+        {0b00010000, -1},
+        {0b00000110,  15},
+        {0b01100000, -15},
+        {0b00000100,  10},
+        {0b00100000, -10},
+        {0b00000011,  25},
+        {0b11000000, -25},
+        {0b00000010,  20},
+        {0b01000000, -20},
+        {0b00000001,  30},
+        {0b10000000, -30}
       };
  
       for (int i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
@@ -899,14 +1007,16 @@ void IoTA_Basic::runPlan(){
 
       outP = Err * Kp[setP.selPID[runPlanNow]];
 
-      // if(bitSensor & 0b00011000){
-      // if(bitSensor & 0b00011000 == 0b00011000 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
+      // if(bitSensor & 0b00111100){
+      if(bitSensor & 0b00011000 == 0b00011000 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
       // if((Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
-      if(Err == 0 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
+      // if(Err == 0 || (Err > 0 && sumI < 0) || (Err < 0 && sumI > 0)){
+      // if(Err > -2 && Err < 2){
         outI = 0;
         sumI = 0;
       } else{
         sumI += Err * deltaTime;
+        sumI = constrain(sumI, -255/Ki[setP.selPID[runPlanNow]], 255/Ki[setP.selPID[runPlanNow]]);
         outI = sumI * Ki[setP.selPID[runPlanNow]];
       }
 
@@ -930,10 +1040,14 @@ void IoTA_Basic::runPlan(){
       // Serial.print(deltaTime);
       // Serial.print(" Out:");
       // Serial.print(outPID);
-      // Serial.print(" Bit:");
-      // Serial.print(outPID); 
+      // Serial.print(" outL:");
+      // Serial.print(outL);
+      // Serial.print(" outR:");
+      // Serial.print(outR);
+      // Serial.print(" Bit:"); 
       // printBinary(bitSensor);
       
     }
   }
 }
+
