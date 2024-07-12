@@ -35,10 +35,10 @@ uint8_t minADC[MAX_SENSOR];
 int8_t selCP = 0;
 uint8_t CP[MAX_CP + 1] = {0,0,0,0,0,0,0,0,0,0}; 
 
-float Kp[MAX_PID] = {2, 4, 6, 8, 10};
-float Ki[MAX_PID] = {5, 6, 7, 8, 9};
-float Kd[MAX_PID] = {5, 10, 15, 25, 30};
-float TS[MAX_PID] = {5, 5, 5, 5, 5};
+float Kp[MAX_PID] = {5, 10, 12, 14, 16};
+float Ki[MAX_PID] = {20, 30, 40, 50, 60};
+float Kd[MAX_PID] = {30, 40, 50, 60, 70};
+float TS[MAX_PID] = {2, 2, 2, 2, 2};
 float MIN_SPEED[MAX_PID] = {-255, -255, -255, -255, -255};
 float MAX_SPEED[MAX_PID] = {255, 255, 255, 255, 255};  
 
@@ -164,6 +164,11 @@ void IoTA_Basic::setPinMotor(int8_t _pinPWML1, int8_t _pinPWML2, int8_t _pinPWMR
 void IoTA_Basic::setCP(uint8_t cp, uint8_t planCP){
   CP[cp] = planCP;
 }
+
+void IoTA_Basic::setSpeed(uint8_t spd){
+  SPEED_RUN = spd;
+}
+
 
 void IoTA_Basic::begin(){ 
   
@@ -869,20 +874,20 @@ void IoTA_Basic::runPlan(){
         {0b01000010, 0}, 
         {0b11000011, 0}, 
         {0b10000001, 0},  
-        {0b00001100,  2},
-        {0b00110000, -2},
-        {0b00001000,  1},
-        {0b00010000, -1},
-        {0b00000110,  4},
-        {0b01100000, -4},
-        {0b00000100,  3},
-        {0b00100000, -3},
-        {0b00000011,  6},
-        {0b11000000, -6},
-        {0b00000010,  5},
-        {0b01000000, -5},
-        {0b00000001,  7},
-        {0b10000000, -7}
+        {0b00001100,  4},
+        {0b00110000, -4},
+        {0b00001000,  2},
+        {0b00010000, -2},
+        {0b00000110,  8},
+        {0b01100000, -8},
+        {0b00000100,  6},
+        {0b00100000, -6},
+        {0b00000011,  16},
+        {0b11000000, -16},
+        {0b00000010,  12},
+        {0b01000000, -12},
+        {0b00000001,  20},
+        {0b10000000, -20}
       };
  
       for (int i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
@@ -894,33 +899,40 @@ void IoTA_Basic::runPlan(){
 
       outP = Err * Kp[setP.selPID[runPlanNow]];
 
-      // if(bitSensor & 0b00111100){
-      //   outI = 0;
-      //   sumI = 0;
-      // } else{
-      //   sumI += Err * deltaTime;
-      //   outI = sumI * Ki[setP.selPID[runPlanNow]];
-      // }
+      // if(bitSensor & 0b00011000){
+      // if(bitSensor & 0b00011000 == 0b00011000 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
+      // if((Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
+      if(Err == 0 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)){
+        outI = 0;
+        sumI = 0;
+      } else{
+        sumI += Err * deltaTime;
+        outI = sumI * Ki[setP.selPID[runPlanNow]];
+      }
 
-      // outD = ((Err - lastErr) * (double) Kd[setP.selPID[runPlanNow]]) / deltaTime; 
+      outD = ((Err - lastErr) * (double) Kd[setP.selPID[runPlanNow]]) / deltaTime; 
 
       lastErr = Err;
 
       outPID = outP + outI + outD;
 
-      // outPID = constrain(outPID, MIN_SPEED[setP.selPID[runPlanNow]],  MAX_SPEED[setP.selPID[runPlanNow]]);
+      int16_t outL = SPEED_RUN + outPID;
+      int16_t outR = SPEED_RUN - outPID;
 
-      // motor(outPID, -outPID);
+      outL = constrain(outL, MIN_SPEED[setP.selPID[runPlanNow]],  MAX_SPEED[setP.selPID[runPlanNow]]);
+      outR = constrain(outR, MIN_SPEED[setP.selPID[runPlanNow]],  MAX_SPEED[setP.selPID[runPlanNow]]);
 
-      Serial.print("Error:");
-      Serial.print(Err);
-      Serial.print(" dT:");
-      Serial.print(deltaTime);
-      Serial.print(" Out:");
-      Serial.print(outPID);
-      Serial.print(" Bit:");
-      Serial.print(outPID); 
-      printBinary(bitSensor);
+      motor(outL, outR);
+
+      // Serial.print("Error:");
+      // Serial.print(Err);
+      // Serial.print(" dT:");
+      // Serial.print(deltaTime);
+      // Serial.print(" Out:");
+      // Serial.print(outPID);
+      // Serial.print(" Bit:");
+      // Serial.print(outPID); 
+      // printBinary(bitSensor);
       
     }
   }

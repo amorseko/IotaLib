@@ -150,6 +150,7 @@ class IoTA_Basic{
     void setPinMotor(int8_t _pinPWML1, int8_t _pinPWML2, int8_t _pinPWMR1, int8_t _pinPWMR2); 
 
     void setCP(uint8_t cp, uint8_t planCP);
+    void setSpeed(uint8_t spd);
 
     void setPlan(uint8_t plan, uint16_t sensor1, uint16_t sensor2, uint8_t modeSensor, uint8_t action, int16_t speedL, int16_t speedR, uint16_t delay, uint8_t followLine, uint8_t colorLine,  uint16_t timer, uint8_t speedTimer, uint8_t selPID);
 
