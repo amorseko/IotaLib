@@ -1,6 +1,6 @@
-#include "IoTA_Basic.h"
+#include <IoTA_Basic.h>
 
-IoTA_Basic iota(IOT_BASIC_8); 
+IoTA_Basic iota(8); 
 
 void setup() { 
   // iota.setWiFi("Kkrbt_mobile", "Kkrbt2024");
@@ -26,6 +26,6 @@ void loop() {
 
 void planning(){
   // iota.setPlan(0, IGNORE_SENSOR, DEFAULT_FORWARD, FOLLOW_CENTER, BLACK_LINE, 200, 120);
-  iota.setPlan(0).followLine(BLACK);
+  iota.setPlan(0).followLine(FOLLOW_RIGHT, BLACK_LINE);
 }
  
