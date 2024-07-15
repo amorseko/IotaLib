@@ -2,6 +2,11 @@
 #ifndef IoTA_Basic_h
 #define IoTA_Basic_h   
 
+#define SENSOR_5 5
+#define SENSOR_8 8
+#define SENSOR_9 9
+#define SENSOR_14 14
+
 #define OLED_RESET 0x3C
 
 #define WHITE SSD1306_WHITE 
@@ -9,14 +14,14 @@
 
 #define EEPROM_SIZE 1023 
 
-#define PWM_FREQUENCY 800
+#define PWM_FREQUENCY 1000
 #define PWM_RESOLUTION 8 
 
 #define MAX_CP 10 
 #define MAX_PID 5
 
 #define MAX_PLAN 99
-#define MAX_MEMORY 99
+#define MAX_MEMORY 4
 
 #define MAX_SENSOR 8 
 #define MAX_PIN_PWM 4 
@@ -46,7 +51,12 @@
 #define OR_AND  1 
 #define EQUAL   2 
 
-#define IGNORE_SENSOR           0b11111111, 0b00000000, OR
+#define M1  0 
+#define M2  1 
+#define M3  2
+#define M4  3 
+
+#define ACTION_NO_SENSOR        0b11111111, 0b00000000, OR
 #define ALL_SENSOR_DETECT       0b11111111, 0b00000000, EQUAL
 #define ALL_SENSOR_NOT_DETECT   0b00000000, 0b00000000, EQUAL
 #define LEFT_DETECT             0b10000000, 0b00000000, OR
@@ -56,10 +66,10 @@
 #define CENTER_RIGHT_DETECT     0b00000001, 0b00011000, OR_AND   
  
 #define NO_ACTION   0, 0, 0 
-#define TURN_RIGHT  200, -150, 150 
-#define TURN_LEFT   -150, 200, 150
+#define TURN_RIGHT  200, -160, 150 
+#define TURN_LEFT   -160, 200, 150
 #define FORWARD     100, 100, 100
-#define BACKWARD    100, 100, 120
+#define BACKWARD    100, 100, 150
 #define STOP        0, 0, 200 
  
 class IoTA_Basic{  
@@ -93,15 +103,17 @@ class IoTA_Basic{
     void setPinSensor(int8_t pinSens1, int8_t pinSens2, int8_t pinSens3, int8_t pinSens4, int8_t pinSens5, int8_t pinSens6, int8_t pinSens7, int8_t pinSens8); 
     void setPinTombol(int8_t _pinBTN_PLUS, int8_t _pinBTN_MINUS, int8_t _pinBTN_BACK, int8_t _pinBTN_ENTER); 
     void setPinMotor(int8_t _pinPWML1, int8_t _pinPWML2, int8_t _pinPWMR1, int8_t _pinPWMR2); 
-    void setPinLED(int8_t _pinLED); 
-
+    void setPinLED(int8_t _pinLED);  
     
     void setFinish(uint8_t plan);
     void setFinish(uint8_t plan, uint8_t mode);
-    void setCP(uint8_t cp, uint8_t planCP);
+    void setCP(uint8_t memory, uint8_t cp0, uint8_t cp1, uint8_t cp2, uint8_t cp3, uint8_t cp4, uint8_t cp5, uint8_t cp6, uint8_t cp7, uint8_t cp8, uint8_t cp9);
     void setSpeed(uint8_t spd);
 
     void setMemory(uint8_t memory);
+    void mirrorMemory(uint8_t memory1);
+    void copyMirrorMemory(uint8_t memory1, uint8_t memory2);
+    void copyMemory(uint8_t memory1, uint8_t memory2);
 
     void setPlan(uint8_t plan, uint8_t colorLine, uint16_t sensor1, uint16_t sensor2, uint8_t modeSensor, int16_t speedL, int16_t speedR, uint16_t delay, uint16_t timer, uint8_t speedTimer, uint8_t selPID);
  

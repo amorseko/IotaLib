@@ -19,16 +19,17 @@ uint8_t maxADC[MAX_SENSOR];
 uint8_t minADC[MAX_SENSOR];
 
 int8_t selCP = 0;
-uint8_t CP[MAX_CP + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-int8_t MEMORY = 0;
+uint8_t CP[MAX_CP][MAX_MEMORY];
+
+int8_t selMemory = 0;
 
 uint8_t FINISH_PLAN = 0;
 uint8_t FINISH_MODE = 0;
 
-float Kp[MAX_PID] = { 4, 6, 8, 10, 12 };
+float Kp[MAX_PID] = { 4, 6, 8, 11, 13 };
 float Ki[MAX_PID] = { 0.5, 0.75, 1, 1.25, 1.5 };
-float Kd[MAX_PID] = { 8, 9, 10, 11, 12 };
-float TS[MAX_PID] = { 1, 1, 1, 1, 1 };
+float Kd[MAX_PID] = { 8, 9, 10, 11, 13 };
+float TS[MAX_PID] = { 2, 2, 2, 2, 2 };
 float MIN_SPEED[MAX_PID] = { -255, -255, -255, -255, -255 };
 float MAX_SPEED[MAX_PID] = { 255, 255, 255, 255, 255 };
 
@@ -587,7 +588,7 @@ unsigned char logoKaka[] = {
 
 #define MAX_MENU 4
 String menuSet[MAX_MENU + 1] = {
-  "START ROBOT",
+  "START MEMORY",
   "CHECK POINT:",
   "CALIBRATE SENSORS",
   "TEST MOTOR:",
@@ -612,6 +613,8 @@ String strFinishMode[3] = {
   "TIMER"
 };
 
+String robotName = "IoTA Basic v2";
+
 String SSID = "Kkrbt_mobile";
 String PASS = "Kkrbt2024";
 char* NAME_OTA = "IoTA-Basic";
@@ -631,25 +634,27 @@ int8_t pinSENSOR[MAX_SENSOR];
 int8_t pinPWM[MAX_PIN_PWM];
 int8_t pinTOMBOL[MAX_PIN_TOMBOL];
 
-uint8_t addRef[MAX_SENSOR] = { 0, 1, 2, 3, 4, 5, 6, 7}; 
-uint8_t addMemory = 9;
-uint8_t addCP = 10;
+uint8_t addRef[MAX_SENSOR] = {1, 2, 3, 4, 5, 6, 7, 8}; 
+uint8_t addMemory = 15;
+uint8_t addCP = 20;
 
 uint8_t s[MAX_SENSOR];
+ 
+int8_t memoryOnSet = 0;
 
 int8_t setPlanNow = 0;
 int8_t runPlanNow = 0;
 struct setPlanning {
-  uint8_t colorLine[MAX_PLAN + 1];
-  uint16_t sensor1[MAX_PLAN + 1];
-  uint16_t sensor2[MAX_PLAN + 1];
-  uint8_t modeSensor[MAX_PLAN + 1]; 
-  int16_t speedL[MAX_PLAN + 1];
-  int16_t speedR[MAX_PLAN + 1];
-  uint16_t delay[MAX_PLAN + 1]; 
-  uint16_t timer[MAX_PLAN + 1];
-  uint8_t speedTimer[MAX_PLAN + 1];
-  uint8_t selPID[MAX_PLAN + 1];
+  uint8_t colorLine[MAX_PLAN + 1][MAX_MEMORY];
+  uint16_t sensor1[MAX_PLAN + 1][MAX_MEMORY];
+  uint16_t sensor2[MAX_PLAN + 1][MAX_MEMORY];
+  uint8_t modeSensor[MAX_PLAN + 1][MAX_MEMORY]; 
+  int16_t speedL[MAX_PLAN + 1][MAX_MEMORY];
+  int16_t speedR[MAX_PLAN + 1][MAX_MEMORY];
+  uint16_t delay[MAX_PLAN + 1][MAX_MEMORY]; 
+  uint16_t timer[MAX_PLAN + 1][MAX_MEMORY];
+  uint8_t speedTimer[MAX_PLAN + 1][MAX_MEMORY];
+  uint8_t selPID[MAX_PLAN + 1][MAX_MEMORY];
 };
 setPlanning setP;
 
@@ -690,6 +695,8 @@ uint8_t statusRun = 0;
 float outP, outI, sumI, outD, outPID;
 double Err = 0, lastErr = 9;
 
+bool enableDebug = 0;
+
 unsigned long lastMillis;
 
 #define B !digitalRead(pinBTN_BACK)
@@ -701,7 +708,6 @@ unsigned long lastMillis;
 #define ledOff digitalWrite(pinLED, 0)
 
 Adafruit_SSD1306 oled(128, 64, &Wire, -1);
-
 
 void printBinary(uint8_t number) {
   for (int i = 7; i >= 0; i--) {
@@ -717,21 +723,29 @@ IoTA_Basic::IoTA_Basic(uint8_t maxSensors) {
   setPinMotor(PIN_MOTOR);
 
   selCP = 0;
+  for (int n = 0; n < MAX_MEMORY; n++) {
+    for (int x = 0; x < MAX_CP; x++) {
+      CP[x][n] = 0;
+    }
+  }
+
   for (int x = 0; x < MAX_SENSOR; x++) {
     refADC[x] = 120;
   }
 
-  for (int x = 0; x <= MAX_PLAN; x++) { 
-    setP.colorLine[x] = BLACK_LINE;
-    setP.sensor1[x] = 0b00000000;
-    setP.sensor2[x] = 0b00000000;
-    setP.modeSensor[x] = OR; 
-    setP.speedL[x] = 120;
-    setP.speedR[x] = 120;
-    setP.delay[x] = 20;
-    setP.timer[x] = 10;
-    setP.speedTimer[x] = 100;
-    setP.selPID[x] = 2;
+  for (int n = 0; n<MAX_MEMORY; n++){
+    for (int x = 0; x <= MAX_PLAN; x++) { 
+      setP.colorLine[x][n] = BLACK_LINE;
+      setP.sensor1[x][n] = 0b00000000;
+      setP.sensor2[x][n] = 0b00000000;
+      setP.modeSensor[x][n] = OR; 
+      setP.speedL[x][n] = 120;
+      setP.speedR[x][n] = 120;
+      setP.delay[x][n] = 20;
+      setP.timer[x][n] = 10;
+      setP.speedTimer[x][n] = 100;
+      setP.selPID[x][n] = 2;
+    }
   }
 }
 
@@ -798,25 +812,51 @@ void IoTA_Basic::setFinish(uint8_t plan) {
   FINISH_PLAN = plan;
   FINISH_MODE = 0;
 
-  Serial.println();
-  Serial.print("Set Finish to Plan ");
-  Serial.print(FINISH_PLAN);
-  Serial.print(" After ");
-  Serial.print(strFinishMode[FINISH_MODE]); 
+  if(enableDebug){
+    Serial.println();
+    Serial.print("Set Finish to Plan ");
+    Serial.print(FINISH_PLAN);
+    Serial.print(" After ");
+    Serial.print(strFinishMode[FINISH_MODE]); 
+  }
 }
+
 void IoTA_Basic::setFinish(uint8_t plan, uint8_t mode) {
   FINISH_PLAN = plan;
   FINISH_MODE = mode;
 
-  Serial.println();
-  Serial.print("Set Finish to Plan ");
-  Serial.print(FINISH_PLAN);
-  Serial.print(" After ");
-  Serial.print(strFinishMode[FINISH_MODE]); 
+  if(enableDebug){
+    Serial.println();
+    Serial.print("Set Finish to Plan ");
+    Serial.print(FINISH_PLAN);
+    Serial.print(" After ");
+    Serial.print(strFinishMode[FINISH_MODE]); 
+  }
 }
 
-void IoTA_Basic::setCP(uint8_t cp, uint8_t planCP) {
-  CP[cp] = planCP;
+void IoTA_Basic::setCP(uint8_t memory, uint8_t cp0, uint8_t cp1, uint8_t cp2, uint8_t cp3, uint8_t cp4, uint8_t cp5, uint8_t cp6, uint8_t cp7, uint8_t cp8, uint8_t cp9) {
+  CP[0][memory] = cp0;
+  CP[1][memory] = cp1;
+  CP[2][memory] = cp2;
+  CP[3][memory] = cp3;
+  CP[4][memory] = cp4;
+  CP[5][memory] = cp5;
+  CP[6][memory] = cp6;
+  CP[7][memory] = cp7;
+  CP[8][memory] = cp8;
+  CP[9][memory] = cp9;
+
+  if(enableDebug){
+    Serial.print("Set Check Point M");
+    Serial.println(memory+1);
+    for(int x = 0; x < MAX_CP; x++){
+      Serial.print("CP");
+      Serial.print(x);
+      Serial.print(" : P");
+      Serial.print(CP[x][memory]);
+      Serial.println();
+    }
+  }
 }
 
 void IoTA_Basic::setSpeed(uint8_t spd) {
@@ -826,7 +866,8 @@ void IoTA_Basic::setSpeed(uint8_t spd) {
 void IoTA_Basic::begin() {
 
   Serial.begin(115200);
-  Serial.println("init GPIO");
+  if(enableDebug)
+    Serial.println("init GPIO");
 
   pinMode(pinBTN_BACK, INPUT_PULLUP);
   pinMode(pinBTN_MINUS, INPUT_PULLUP);
@@ -844,33 +885,38 @@ void IoTA_Basic::begin() {
   ledcAttach(PWMR1, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttach(PWML1, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttach(PWMR2, PWM_FREQUENCY, PWM_RESOLUTION);
-
-  Serial.print("PIN SENSOR:");
-  for (int x = 0; x < MAX_SENSOR; x++) {
-    Serial.print(pinSENSOR[x]);
-    Serial.print(" ");
+  
+  if(enableDebug) {
+    Serial.print("PIN SENSOR:"); 
+    for (int x = 0; x < MAX_SENSOR; x++) {
+      Serial.print(pinSENSOR[x]);
+      Serial.print(" ");
+    }
+    Serial.println("(Successful)");
   }
-  Serial.println("(Successful)");
 
-  Serial.print("PIN TOMBOL:");
-  for (int x = 0; x < MAX_PIN_TOMBOL; x++) {
-    Serial.print(pinTOMBOL[x]);
-    Serial.print(" ");
+  if(enableDebug) {
+    Serial.print("PIN TOMBOL:");
+    for (int x = 0; x < MAX_PIN_TOMBOL; x++) {
+      Serial.print(pinTOMBOL[x]);
+      Serial.print(" ");
+    }
+    Serial.println("(Successful)");
   }
-  Serial.println("(Successful)");
-
-  Serial.print("PIN PWM:");
-  for (int x = 0; x < MAX_PIN_PWM; x++) {
-    Serial.print(pinPWM[x]);
-    Serial.print(" ");
+  if(enableDebug) {
+    Serial.print("PIN PWM:");
+    for (int x = 0; x < MAX_PIN_PWM; x++) {
+      Serial.print(pinPWM[x]);
+      Serial.print(" ");
+    }
+    Serial.println("(Successful)");
   }
-  Serial.println("(Successful)");
 
-  Serial.print("init EEPROM");
+  if(enableDebug) Serial.print("init EEPROM");
   EEPROM.begin(EEPROM_SIZE);
-  Serial.println(" (Successful)");
+  if(enableDebug) Serial.println(" (Successful)");
 
-  Serial.print("init OLED");
+  if(enableDebug) Serial.print("init OLED");
   if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_RESET)) {
     Serial.println(F(" (Failed)"));
   }
@@ -878,26 +924,33 @@ void IoTA_Basic::begin() {
   oled.setTextColor(SSD1306_WHITE);
   oled.setRotation(2);
 
-  Serial.println(" (Successful)");
+  if(enableDebug) Serial.println(" (Successful)");
 
   oled.clearDisplay();
-  oled.drawBitmap(25, 2, logoKaka, 80, 55, WHITE);
+  oled.drawBitmap(25, 2, logoKaka, 80, 55, WHITE); 
   oled.display();
 
-  Serial.print("Read EEPROM Value");
+  if(enableDebug) Serial.print("Read EEPROM Value");
   for (int x = 0; x < MAX_SENSOR; x++) {
     refADC[x] = EEPROM.read(addRef[x]);
   }
-  Serial.println(" (Successful)");
+  if(enableDebug) Serial.println(" (Successful)");
 
   selCP = EEPROM.read(addCP);
-  if (selCP > 10) {
+  if (selCP >= MAX_CP) {
     selCP = 0;
     EEPROM.write(addCP, selCP);
     EEPROM.commit();
   }
 
-  // delay(700);
+  selMemory = EEPROM.read(addMemory);
+  if (selMemory >= MAX_MEMORY) {
+    selMemory = 0;
+    EEPROM.write(addMemory, selMemory);
+    EEPROM.commit();
+  }
+
+  if(!enableDebug) delay(500);
 
   if (M) {
     bool initWifi = 0;
@@ -906,7 +959,7 @@ void IoTA_Basic::begin() {
     oled.setCursor(0, 0);
     oled.println("Connect to Network...");
     oled.setCursor(0, 15);
-    oled.println("WiFi:");
+    oled.print("WiFi:");
     oled.println(SSID);
     oled.display();
     Serial.print("Init WiFi ");
@@ -934,111 +987,371 @@ void IoTA_Basic::begin() {
     }
   }
 
-  Serial.print("Kp: ");
-  for (n = 0; n < MAX_PID; n++) {
-    Serial.print(Kp[n]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.print("Ki: ");
-  for (n = 0; n < MAX_PID; n++) {
-    Serial.print(Ki[n]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.print("Kd: ");
-  for (n = 0; n < MAX_PID; n++) {
-    Serial.print(Kd[n]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.print("MIN: ");
-  for (n = 0; n < MAX_PID; n++) {
-    Serial.print(MIN_SPEED[n]);
-    Serial.print(",");
-  }
-  Serial.println();
-  Serial.print("MAX: ");
-  for (n = 0; n < MAX_PID; n++) {
-    Serial.print(MAX_SPEED[n]);
-    Serial.print(",");
-  }
-  Serial.println();
-
-  Serial.println("Init Plan");
-  for (int x = 0; x <= MAX_PLAN; x++) {
-    Serial.print("Plan:");
-    Serial.print(x);
-    Serial.print(" ");
-    Serial.print(setP.delay[x]); 
-    Serial.print(" ");
-    Serial.print(strColor[setP.colorLine[x]]);
-    printBinary(setP.sensor1[x]);
-    Serial.print(" ");
-    printBinary(setP.sensor2[x]);
-    Serial.print(" ");
-    Serial.print(strModeSensor[setP.modeSensor[x]]); 
-    Serial.print(" ");
-    Serial.print(setP.speedL[x]);
-    Serial.print(" ");
-    Serial.print(setP.speedR[x]);
-    Serial.print(" ");
-    Serial.print(" ");
-    Serial.print(setP.timer[x]);
-    Serial.print(" ");
-    Serial.print(setP.speedTimer[x]);
-    Serial.print(" PID_");
-    Serial.print(setP.selPID[x]);
+  if(enableDebug) {
+    Serial.print("Kp: ");
+    for (n = 0; n < MAX_PID; n++) {
+      Serial.print(Kp[n]);
+      Serial.print(",");
+    }
     Serial.println();
+    Serial.print("Ki: ");
+    for (n = 0; n < MAX_PID; n++) {
+      Serial.print(Ki[n]);
+      Serial.print(",");
+    }
+    Serial.println();
+    Serial.print("Kd: ");
+    for (n = 0; n < MAX_PID; n++) {
+      Serial.print(Kd[n]);
+      Serial.print(",");
+    }
+    Serial.println();
+    Serial.print("MIN: ");
+    for (n = 0; n < MAX_PID; n++) {
+      Serial.print(MIN_SPEED[n]);
+      Serial.print(",");
+    }
+    Serial.println();
+    Serial.print("MAX: ");
+    for (n = 0; n < MAX_PID; n++) {
+      Serial.print(MAX_SPEED[n]);
+      Serial.print(",");
+    }
+    Serial.println();
+
+    Serial.println("Init Plan on Memory ");
+    for (int n = 0; n < MAX_MEMORY; n++) { 
+      Serial.print("M:");
+      Serial.println(n);
+      for (int x = 0; x < MAX_PLAN; x++) {
+        Serial.print("Plan:");
+        Serial.print(x);
+        Serial.print(" ");
+        Serial.print(setP.delay[x][n]); 
+        Serial.print(" ");
+        Serial.print(strColor[setP.colorLine[x][n]]);
+        Serial.print(" ");
+        printBinary(setP.sensor1[x][n]);
+        Serial.print(" ");
+        printBinary(setP.sensor2[x][n]);
+        Serial.print(" ");
+        Serial.print(strModeSensor[setP.modeSensor[x][n]]); 
+        Serial.print(" ");
+        Serial.print(setP.speedL[x][n]);
+        Serial.print(" ");
+        Serial.print(setP.speedR[x][n]);
+        Serial.print(" ");
+        Serial.print(" ");
+        Serial.print(setP.timer[x][n]);
+        Serial.print(" ");
+        Serial.print(setP.speedTimer[x][n]);
+        Serial.print(" PID_");
+        Serial.print(setP.selPID[x][n]);
+        Serial.println();
+      }
+    }
+  } 
+}
+
+void IoTA_Basic::setMemory(uint8_t memory){
+  memoryOnSet = memory;
+} 
+
+void IoTA_Basic::copyMemory(uint8_t memory1, uint8_t memory2){
+  for (int x = 0; x < MAX_PLAN; x++) {
+    setP.colorLine[x][memory2]  = setP.colorLine[x][memory1];
+    setP.sensor1[x][memory2]    = setP.sensor1[x][memory1] ;
+    setP.sensor2[x][memory2]    = setP.sensor2[x][memory1];
+    setP.modeSensor[x][memory2] = setP.modeSensor[x][memory1]; 
+    setP.speedL[x][memory2]     = setP.speedL[x][memory1];
+    setP.speedR[x][memory2]     = setP.speedR[x][memory1];
+    setP.delay[x][memory2]      = setP.delay[x][memory1];
+    setP.timer[x][memory2]      = setP.timer[x][memory1];
+    setP.speedTimer[x][memory2] = setP.speedTimer[x][memory1];
+    setP.selPID[x][memory2]     = setP.selPID[x][memory1];
+  }
+
+  for (int x = 0; x < MAX_CP; x++) {
+    CP[x][memory2] = CP[x][memory1]; 
+  }
+
+  if(enableDebug){
+    Serial.println(); 
+    Serial.print("Copy Plan on Memory ");
+    Serial.print(memory1);
+    Serial.print(" to Memory ");
+    Serial.println(memory2);  
+
+    for (int x = 0; x < MAX_PLAN; x++) { 
+
+      Serial.print("from Plan M");
+      Serial.print(memory1);
+      Serial.print(" :");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(setP.delay[x][memory1]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory1]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory1]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory1]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory1]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory1]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory1]); 
+
+      Serial.print(" to Plan M");
+      Serial.print(memory2);
+      Serial.print(" :");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(setP.delay[x][memory2]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory2]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory2]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory2]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory2]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory2]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory2]);
+      Serial.println();
+    } 
+  }
+ 
+}
+
+void IoTA_Basic::mirrorMemory(uint8_t memory1){
+  for (int x = 0; x < MAX_PLAN; x++) {   
+    int L = setP.speedL[x][memory1];
+    int R = setP.speedR[x][memory1];
+    setP.speedL[x][memory1]     = R;
+    setP.speedR[x][memory1]     = L; 
+
+    if(setP.sensor1[x][memory1] == 0b10000000){
+      setP.sensor1[x][memory1] = 0b00000001;
+    }
+    else if(setP.sensor1[x][memory1] == 0b00000001){
+      setP.sensor1[x][memory1] = 0b10000000;
+    } 
+  } 
+  
+  if(enableDebug){
+    Serial.println(); 
+    Serial.print("Mirror Plan on Memory ");
+    Serial.print(memory1); 
+  
+    for (int x = 0; x < MAX_PLAN; x++) { 
+
+      Serial.print("Plan : "); 
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(setP.delay[x][memory1]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory1]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory1]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory1]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory1]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory1]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory1]);
+      
+      Serial.print(" - to - ");  
+      Serial.print(setP.delay[x][memory1]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory1]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory1]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory1]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory1]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory1]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory1]);
+      Serial.println();
+    }  
+  }
+}
+void IoTA_Basic::copyMirrorMemory(uint8_t memory1, uint8_t memory2){
+  for (int x = 0; x < MAX_CP; x++) {
+    CP[x][memory2] = CP[x][memory1]; 
+  }
+
+  for (int x = 0; x < MAX_PLAN; x++) {  
+    int L = setP.speedL[x][memory1];
+    int R = setP.speedR[x][memory1];
+
+    setP.colorLine[x][memory2]  = setP.colorLine[x][memory1];
+    setP.sensor2[x][memory2]    = setP.sensor2[x][memory1];
+    setP.modeSensor[x][memory2] = setP.modeSensor[x][memory1]; 
+    setP.speedL[x][memory2]     = R;
+    setP.speedR[x][memory2]     = L;
+    setP.delay[x][memory2]      = setP.delay[x][memory1];
+    setP.timer[x][memory2]      = setP.timer[x][memory1];
+    setP.speedTimer[x][memory2] = setP.speedTimer[x][memory1];
+    setP.selPID[x][memory2]     = setP.selPID[x][memory1];
+    
+    setP.sensor1[x][memory2]    = setP.sensor1[x][memory1];
+
+    if(setP.sensor1[x][memory1] == 0b10000000){
+      setP.sensor1[x][memory2] = 0b00000001;
+    }
+    else if(setP.sensor1[x][memory1] == 0b00000001){
+      setP.sensor1[x][memory2] = 0b10000000;
+    } 
+  } 
+  
+  if(enableDebug){
+    Serial.println(); 
+    Serial.print("Mirror Plan on Memory ");
+    Serial.print(memory1);
+    Serial.print(" to Memory ");
+    Serial.println(memory2);  
+  
+    for (int x = 0; x < MAX_PLAN; x++) { 
+
+      Serial.print("from Plan M");
+      Serial.print(memory1);
+      Serial.print(" :");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(setP.delay[x][memory1]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory1]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory1]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory1]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory1]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory1]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory1]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory1]);
+      
+      Serial.print(" to Plan M");
+      Serial.print(memory2);
+      Serial.print(" :");
+      Serial.print(x);
+      Serial.print(" ");
+      Serial.print(setP.delay[x][memory2]); 
+      Serial.print(" ");
+      Serial.print(strColor[setP.colorLine[x][memory2]]);
+      Serial.print(" ");
+      printBinary(setP.sensor1[x][memory2]);
+      Serial.print(" ");
+      printBinary(setP.sensor2[x][memory2]);
+      Serial.print(" ");
+      Serial.print(strModeSensor[setP.modeSensor[x][memory2]]); 
+      Serial.print(" ");
+      Serial.print(setP.speedL[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.speedR[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.timer[x][memory2]);
+      Serial.print(" ");
+      Serial.print(setP.speedTimer[x][memory2]);
+      Serial.print(" PID_");
+      Serial.print(setP.selPID[x][memory2]);
+      Serial.println();
+    }  
   }
 }
 
 void IoTA_Basic::setPlan(uint8_t plan, uint8_t colorLine, uint16_t sensor1, uint16_t sensor2, uint8_t modeSensor, int16_t speedL, int16_t speedR, uint16_t delay, uint16_t timer, uint8_t speedTimer, uint8_t selPID) {
-  setP.colorLine[plan] = colorLine;
-  setP.sensor1[plan] = sensor1;
-  setP.sensor2[plan] = sensor2;
-  setP.modeSensor[plan] = modeSensor; 
-  setP.speedL[plan] = speedL;
-  setP.speedR[plan] = speedR;
-  setP.delay[plan] = delay;
-  setP.timer[plan] = timer;
-  setP.speedTimer[plan] = speedTimer;
-  setP.selPID[plan] = selPID;
+  setP.colorLine[plan][memoryOnSet] = colorLine;
+  setP.sensor1[plan][memoryOnSet] = sensor1;
+  setP.sensor2[plan][memoryOnSet] = sensor2;
+  setP.modeSensor[plan][memoryOnSet] = modeSensor; 
+  setP.speedL[plan][memoryOnSet] = speedL;
+  setP.speedR[plan][memoryOnSet] = speedR;
+  setP.delay[plan][memoryOnSet] = delay;
+  setP.timer[plan][memoryOnSet] = timer;
+  setP.speedTimer[plan][memoryOnSet] = speedTimer;
+  setP.selPID[plan][memoryOnSet] = selPID;
 
-  Serial.println();
-  Serial.print("Set Plan : ");
-  Serial.print(plan); 
-  Serial.print(" ");
-  Serial.print(strColor[setP.colorLine[plan]]);
-  Serial.print(" ");
-  printBinary(setP.sensor1[plan]);
-  Serial.print(" ");
-  printBinary(setP.sensor2[plan]);
-  Serial.print(" ");
-  Serial.print(strModeSensor[setP.modeSensor[plan]]); 
-  Serial.print(" ");
-  Serial.print(setP.speedL[plan]);
-  Serial.print(" ");
-  Serial.print(setP.speedR[plan]);
-  Serial.print(" ");
-  Serial.print(setP.delay[plan]);
-  Serial.print(" ");
-  Serial.print(setP.timer[plan]);
-  Serial.print(" ");
-  Serial.print(setP.speedTimer[plan]);
-  Serial.print(" ");
-  Serial.print(setP.selPID[plan]);
-  Serial.println();
+  if(enableDebug){
+    // Serial.println();
+    Serial.print("Set Plan M");
+    Serial.print(memoryOnSet);
+    Serial.print(" :");
+    Serial.print(plan); 
+    Serial.print(" ");
+    Serial.print(strColor[setP.colorLine[plan][memoryOnSet]]);
+    Serial.print(" ");
+    printBinary(setP.sensor1[plan][memoryOnSet]);
+    Serial.print(" ");
+    printBinary(setP.sensor2[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(strModeSensor[setP.modeSensor[plan][memoryOnSet]]); 
+    Serial.print(" ");
+    Serial.print(setP.speedL[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(setP.speedR[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(setP.delay[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(setP.timer[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(setP.speedTimer[plan][memoryOnSet]);
+    Serial.print(" ");
+    Serial.print(setP.selPID[plan][memoryOnSet]);
+    Serial.println();
+  }
  
 } 
 
 ///////////////////////////////////////////////////////////////PRIVATE METHOD
 void IoTA_Basic::initOTA() {
-  Serial.println("init OTA");
-  Serial.print("OTA Name:");
-  Serial.println(NAME_OTA);
-  Serial.print("OTA Password:");
-  Serial.println(PASS_OTA);
+  if(enableDebug){ 
+    Serial.println("init OTA");
+    Serial.print("OTA Name:");
+    Serial.println(NAME_OTA);
+    Serial.print("OTA Password:");
+    Serial.println(PASS_OTA);
+  }
 
   ArduinoOTA.setHostname(NAME_OTA);
   ArduinoOTA.setPassword(PASS_OTA);
@@ -1165,7 +1478,7 @@ int IoTA_Basic::getError() {
   readADC();
 
   for (int n = 0; n < MAX_SENSOR; n++) {
-    if ((setP.colorLine[runPlanNow] == BLACK && s[n] > refADC[n]) || (setP.colorLine[runPlanNow] == WHITE && s[n] < refADC[n])) {
+    if ((setP.colorLine[runPlanNow][selMemory] == BLACK && s[n] > refADC[n]) || (setP.colorLine[runPlanNow][selMemory] == WHITE && s[n] < refADC[n])) {
       bitSensor += (1 << (MAX_SENSOR - 1)) >> n;
     }
   }
@@ -1262,7 +1575,7 @@ void IoTA_Basic::homeScreen() {
   int8_t maxParamMotor = 4;
   int8_t paramMotorValue = 0;
   String paramMotor[maxParamMotor + 1] = {
-    "FRWD-BCWR",
+    "FRWD-BWRD",
     "FRWARD 1s",
     "FRWARD 2s",
     "BCKWRD 1s",
@@ -1286,11 +1599,14 @@ void IoTA_Basic::homeScreen() {
         oled.setCursor(0, 15 + 2 + (x - (m - m1)) * 12.5);
       }
       oled.print(menuSet[x]);
-
+      if (x == 0) { 
+        oled.print(" M");
+        oled.print(selMemory+1); 
+      }
       if (x == 1) {
         oled.print(selCP);
         oled.print(" (P");
-        oled.print(CP[selCP]);
+        oled.print(CP[selCP][selMemory]);
         oled.print(")");
       }
       if (x == 3) {
@@ -1365,6 +1681,25 @@ void IoTA_Basic::homeScreen() {
       }
     }
 
+    if (enableSel && P && m == 0) {
+      selMemory++;
+      delay(100);
+      if (selMemory >= MAX_MEMORY) {
+        selMemory = 0;
+      }
+      EEPROM.write(addMemory, selMemory);
+      EEPROM.commit();
+    }
+    if (enableSel && M && m == 0) {
+      selMemory--;
+      delay(100);
+      if (selMemory < 0) {
+        selMemory = MAX_MEMORY-1;
+      }
+      EEPROM.write(addMemory, selMemory);
+      EEPROM.commit();
+    }
+
     if (enableSel && P && m == 1) {
       selCP++;
       delay(100);
@@ -1378,7 +1713,7 @@ void IoTA_Basic::homeScreen() {
       selCP--;
       delay(100);
       if (selCP < 0) {
-        selCP = MAX_CP;
+        selCP = MAX_CP - 1;
       }
       EEPROM.write(addCP, selCP);
       EEPROM.commit();
@@ -1664,24 +1999,24 @@ void IoTA_Basic::tampilBarSensor(int yy) {
 void IoTA_Basic::runPIDLine(int spd) {
 
   unsigned long currentMillis = millis();
-  if (currentMillis - lastMillis > TS[setP.selPID[runPlanNow]]) {
+  if (currentMillis - lastMillis > TS[setP.selPID[runPlanNow][selMemory]]) {
     double deltaTime = (currentMillis - lastMillis) / 1000.000;
     lastMillis = millis();
 
     Err = getError();
 
-    outP = Err * Kp[setP.selPID[runPlanNow]];
+    outP = Err * Kp[setP.selPID[runPlanNow][selMemory]];
 
     if (bitSensor & 0b00011000 == 0b00011000 || (Err > 0 && lastErr < 0) || (Err < 0 && lastErr > 0)) {
       outI = 0;
       sumI = 0;
     } else {
       sumI += Err * deltaTime;
-      sumI = constrain(sumI, -255 / Ki[setP.selPID[runPlanNow]], 255 / Ki[setP.selPID[runPlanNow]]);
-      outI = sumI * Ki[setP.selPID[runPlanNow]];
+      sumI = constrain(sumI, -255 / Ki[setP.selPID[runPlanNow][selMemory]], 255 / Ki[setP.selPID[runPlanNow][selMemory]]);
+      outI = sumI * Ki[setP.selPID[runPlanNow][selMemory]];
     }
 
-    outD = ((Err - lastErr) * (double)Kd[setP.selPID[runPlanNow]]) / deltaTime;
+    outD = ((Err - lastErr) * (double)Kd[setP.selPID[runPlanNow][selMemory]]) / deltaTime;
 
     lastErr = Err;
 
@@ -1690,8 +2025,8 @@ void IoTA_Basic::runPIDLine(int spd) {
     int16_t outL = spd + outPID;
     int16_t outR = spd - outPID;
 
-    outL = constrain(outL, MIN_SPEED[setP.selPID[runPlanNow]], MAX_SPEED[setP.selPID[runPlanNow]]);
-    outR = constrain(outR, MIN_SPEED[setP.selPID[runPlanNow]], MAX_SPEED[setP.selPID[runPlanNow]]);
+    outL = constrain(outL, MIN_SPEED[setP.selPID[runPlanNow][selMemory]], MAX_SPEED[setP.selPID[runPlanNow][selMemory]]);
+    outR = constrain(outR, MIN_SPEED[setP.selPID[runPlanNow][selMemory]], MAX_SPEED[setP.selPID[runPlanNow][selMemory]]);
 
     motor(outL, outR);
 
@@ -1714,14 +2049,16 @@ void IoTA_Basic::runPlan() {
   Serial.println();
   Serial.println("RUNING PLAN");
 
-  statusRun = 0;
 
   unsigned long millisTimer = 0;
 
-  runPlanNow = CP[selCP];
-
   bool enableBreak = 0;
   bool enableBelok = 0;
+  runPlanNow = CP[selCP][selMemory]; 
+  statusRun = 0;
+  error = 0;
+  Err = 0;
+  bitSensor = 0;
   while (1) {
     if (B) { break; }
 
@@ -1739,11 +2076,11 @@ void IoTA_Basic::runPlan() {
       ledOff;
       runPIDLine(SPEED_RUN);
 
-      if (setP.modeSensor[runPlanNow] == OR && (setP.sensor1[runPlanNow] & bitSensor) || setP.modeSensor[runPlanNow] == OR && (setP.sensor1[runPlanNow] == 0)) {
+      if (setP.modeSensor[runPlanNow][selMemory] == OR && (setP.sensor1[runPlanNow][selMemory] & bitSensor) || setP.modeSensor[runPlanNow][selMemory] == OR && (setP.sensor1[runPlanNow][selMemory] == 0)) {
         statusRun = 1;
-      } else if (setP.modeSensor[runPlanNow] == OR_AND && (setP.sensor1[runPlanNow] & bitSensor) && (setP.sensor2[runPlanNow] & bitSensor)) {
+      } else if (setP.modeSensor[runPlanNow][selMemory] == OR_AND && (setP.sensor1[runPlanNow][selMemory] & bitSensor) && (setP.sensor2[runPlanNow][selMemory] & bitSensor)) {
         statusRun = 1;
-      } else if ((setP.modeSensor[runPlanNow] == EQUAL) && (setP.sensor1[runPlanNow] == bitSensor)) {
+      } else if ((setP.modeSensor[runPlanNow][selMemory] == EQUAL) && (setP.sensor1[runPlanNow][selMemory] == bitSensor)) {
         statusRun = 1;
       }
     }
@@ -1755,22 +2092,22 @@ void IoTA_Basic::runPlan() {
         break;
       }
 
-      if(enableBreak == 0  && setP.speedL[runPlanNow] != 0 && setP.speedR[runPlanNow] != 0 && setP.delay[runPlanNow] != 0){
+      if(enableBreak == 0  && setP.speedL[runPlanNow][selMemory] != 0 && setP.speedR[runPlanNow][selMemory] != 0 && setP.delay[runPlanNow][selMemory] != 0 && (setP.speedL[runPlanNow][selMemory] < 0 || setP.speedR[runPlanNow][selMemory] < 0)){
         motor(-SPEED_RUN, -SPEED_RUN);
         delay(20);
         stop(); 
         enableBreak = 1;
       }
       
-      motor(setP.speedL[runPlanNow], setP.speedR[runPlanNow]);
+      motor(setP.speedL[runPlanNow][selMemory], setP.speedR[runPlanNow][selMemory]);
 
-      if(enableBelok == 0 && setP.speedL[runPlanNow] != 0 && setP.speedR[runPlanNow] != 0 && setP.delay[runPlanNow] != 0){
-        delay(setP.delay[runPlanNow]);
+      if(enableBelok == 0 && setP.speedL[runPlanNow][selMemory] != 0 && setP.speedR[runPlanNow][selMemory] != 0 && setP.delay[runPlanNow][selMemory] != 0){
+        delay(setP.delay[runPlanNow][selMemory]);
         stop();
         enableBelok = 1;
       }
 
-      if(setP.speedTimer[runPlanNow] > 0){
+      if(setP.speedTimer[runPlanNow][selMemory] > 0){
         getError();
         if(bitSensor & 0b0111110){
           statusRun = 2;
@@ -1791,17 +2128,16 @@ void IoTA_Basic::runPlan() {
     }
     if (statusRun == 2) {
       ledOn;
-      runPIDLine(setP.speedTimer[runPlanNow]);
-      if (millis() - millisTimer > setP.timer[runPlanNow]) {
+      runPIDLine(setP.speedTimer[runPlanNow][selMemory]);
+      if (millis() - millisTimer > setP.timer[runPlanNow][selMemory]) {
+        if (FINISH_PLAN == runPlanNow && FINISH_MODE == 2) {
+          motor(-100, -100);
+          delay(100);
+          stop();
+          break;
+        }
         statusRun = 0;
         runPlanNow++;
-      }
-
-      if (FINISH_PLAN == runPlanNow && FINISH_MODE == 2) {
-        motor(-100, -100);
-        delay(100);
-        stop();
-        break;
       }
     }
   }
