@@ -26,7 +26,7 @@ int8_t selMemory = 0;
 uint8_t FINISH_PLAN = 0;
 uint8_t FINISH_MODE = 0;
 
-float Kp[MAX_PID] = { 4, 6, 8, 11, 13 };
+float Kp[MAX_PID] = { 3, 6, 8, 11, 13 };
 float Ki[MAX_PID] = { 0.5, 0.75, 1, 1.25, 1.5 };
 float Kd[MAX_PID] = { 8, 9, 10, 11, 13 };
 float TS[MAX_PID] = { 2, 2, 2, 2, 2 };
