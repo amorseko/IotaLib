@@ -33,9 +33,12 @@ output/
 src/IoTA_Basic.cpp
 
 # 2. Allow the OBFUSCATED static library (Push this for users to use)
-!src/libIoTA_Basic.a
+!src/esp32/libIoTA_Basic.a
 
 # 3. Ignore backup folders
 backup_source/
 *.bak
+
+# 4. Ignore build scripts
+src/build_lib.sh
 
