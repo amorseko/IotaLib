@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "IoTA_Basic.h"
+#include <IotaLib.h>
 
 IoTA_Basic iota(SENSOR_8); 
 #define NO_ACTION   0, 0, 0 
@@ -17,9 +17,10 @@ void setup() {
   iota.setCP(M1,0,1,2,0,0,0,0,0,0,0); 
 
   planning1(); 
-  planning2(); 
-  planning3(); 
-  planning4(); 
+  // planning2(); 
+  // planning3(); 
+  // planning4(); 
+  // iota.motor(100, 100);
 }
 
 void loop() {  

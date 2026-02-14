@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "IoTA_Basic.h"
+#include <IotaLib.h>
 
 IoTA_Basic iota(8); 
 

@@ -1,0 +1,41 @@
+# Arduino IDE
+.DS_Store
+*.DS_Store
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.d
+*.map
+*.lst
+
+# VS Code / PlatformIO
+.vscode/
+.pio/
+.pioenvs/
+
+# Build directories
+build/
+output/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Local scripts (optional, if you want only source in repo)
+# test_compile.sh
+# test.cpp
+
+# Specific to this project obfuscation
+# 1. Ignore the SECRET source code (Do not push to public repo)
+src/IoTA_Basic.cpp
+
+# 2. Allow the OBFUSCATED static library (Push this for users to use)
+!src/libIoTA_Basic.a
+
+# 3. Ignore backup folders
+backup_source/
+*.bak
+
